@@ -3,15 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "seed": "node prisma/seed.js",
-    "studio": "prisma studio"
+    "generate": "dotenv -e ../../.env prisma generate",
+    "migrate": "dotenv -e ../../.env prisma migrate dev",
+    "seed": "dotenv -e ../../.env node prisma/seed.js",
+    "studio": "dotenv -e ../../.env prisma studio"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0"
   },
   "devDependencies": {
+    "dotenv-cli": "^7.4.0",
     "prisma": "^5.10.0"
   }
 }
