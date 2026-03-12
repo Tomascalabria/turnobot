@@ -1,0 +1,21 @@
+{
+  "name": "@turnobot/bot",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@turnobot/db": "*",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.18.0",
+    "googleapis": "^140.0.0",
+    "ioredis": "^5.3.0",
+    "mercadopago": "^2.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
