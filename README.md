@@ -1,51 +1,42 @@
-# Turnobot
+# TransBot 🚦
 
-Bot de WhatsApp para gestión de turnos médicos con panel web para profesionales.
+Comparador de costos de transporte: ingresá un origen y un destino y compará cuánto te
+conviene ir en **auto propio**, en **colectivo/bondi**, en **Uber** o en **Cabify**.
 
-## Stack
+## Cómo funciona
 
-- **Bot**: Node.js + Express + WhatsApp Cloud API + Google Calendar + MercadoPago
-- **Web**: Next.js 14 + NextAuth + Tailwind CSS
-- **DB**: PostgreSQL + Prisma (monorepo compartido)
-- **Sessions**: Redis
+- El origen y destino se buscan con el autocompletado de **Google Places** y la ruta
+  (distancia y tiempo) se calcula con la **Directions API** de Google Maps (modo auto y,
+  cuando hay datos disponibles, modo transporte público).
+- **Auto propio**: se estima con precio de nafta, consumo del auto, estacionamiento y
+  peajes (todos editables).
+- **Colectivo/bondi**: tarifa SUBE por tramo, editable, con la cantidad de colectivos
+  necesarios.
+- **Uber / Cabify**: como ninguna de las dos apps ofrece una API pública de precios,
+  se calcula una **estimación** (tarifa base + $/km + $/min, todo editable). También se
+  puede cargar el precio real que muestra la app en ese momento, que reemplaza al
+  estimado. Se aclara siempre que el cálculo es aproximado y puede variar según demanda,
+  tarifa dinámica y otros factores externos.
+- Si no hay una clave de Google Maps configurada, o mientras se prueba, se puede tildar
+  **"Ingresar distancia y tiempo manualmente"** para cargar esos datos a mano y comparar
+  igual.
+- La opción más barata queda resaltada.
 
 ## Setup rápido
 
 ```bash
 cp .env.example .env
-# Completar variables en .env
+# Completar NEXT_PUBLIC_GOOGLE_MAPS_API_KEY con una clave que tenga habilitadas
+# las APIs: Maps JavaScript API, Places API y Directions API
+# https://console.cloud.google.com/google/maps-apis/credentials
 
 npm install
-npm run db:migrate
-npm run db:seed
-
-# Terminal 1 – bot Express
-npm run dev:bot
-
-# Terminal 2 – Next.js
-npm run dev:web
-
-# Terminal 3 – túnel ngrok
-ngrok http 3001
+npm run dev
 ```
 
-Después de obtener la URL de ngrok:
-1. Actualizar `GOOGLE_REDIRECT_URI` y `MP_REDIRECT_URI` en `.env`
-2. Configurar el webhook de WhatsApp en Meta Developers con `https://<ngrok>/api/whatsapp/webhook`
-3. Verificar con el token `WA_VERIFY_TOKEN`
+Abrir http://localhost:3000
 
-## Estructura
+## Stack
 
-```
-turnobot/
-├── packages/db/          ← Prisma schema compartido
-├── apps/bot/             ← Express (puerto 3001)
-└── apps/web/             ← Next.js (puerto 3000)
-```
-
-## Semanas
-
-- **Semana 1** ✅ Estructura del monorepo + DB
-- **Semana 2** ✅ WhatsApp webhook + Google Calendar OAuth
-- **Semana 3** – MercadoPago split payments + máquina de estados completa
-- **Semana 4** – Panel web completo (servicios, turnos, config bot, plan)
+- Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- `@react-google-maps/api` para el mapa, autocompletado de direcciones y cálculo de rutas
