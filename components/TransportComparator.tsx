@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, useCallback } from 'react'
+import { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import {
   GoogleMap,
   Autocomplete,
@@ -18,6 +18,17 @@ import {
   defaultCarParams,
   defaultUberParams,
 } from '@/lib/pricing'
+import { CAR_BRANDS, carsByBrand, findCar } from '@/lib/cars'
+
+type FuelPriceStatus = 'loading' | 'success' | 'error'
+
+interface FuelPriceApiResponse {
+  superPrice: number | null
+  premiumPrice: number | null
+  sourceUrl: string
+  fetchedAt: string
+  error?: string
+}
 
 const LIBRARIES: 'places'[] = ['places']
 const MAP_CONTAINER_STYLE = { width: '100%', height: '320px', borderRadius: '0.75rem' }
@@ -57,6 +68,62 @@ export default function TransportComparator() {
   const [busParams, setBusParams] = useState(defaultBusParams)
   const [uberParams, setUberParams] = useState(defaultUberParams)
   const [cabifyParams, setCabifyParams] = useState(defaultCabifyParams)
+
+  const [selectedCarId, setSelectedCarId] = useState('custom')
+  const [fuelPriceStatus, setFuelPriceStatus] = useState<FuelPriceStatus>('loading')
+  const [fuelPriceInfo, setFuelPriceInfo] = useState<FuelPriceApiResponse | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadFuelPrice() {
+      setFuelPriceStatus('loading')
+      try {
+        const res = await fetch('/api/fuel-price')
+        const data: FuelPriceApiResponse = await res.json()
+        if (cancelled) return
+        if (!res.ok || data.superPrice === null) {
+          setFuelPriceStatus('error')
+          setFuelPriceInfo(data)
+          return
+        }
+        setFuelPriceInfo(data)
+        setFuelPriceStatus('success')
+        setCarParams((p) => ({ ...p, fuelPricePerLiter: data.superPrice as number }))
+      } catch {
+        if (!cancelled) setFuelPriceStatus('error')
+      }
+    }
+    loadFuelPrice()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const refreshFuelPrice = () => {
+    setFuelPriceStatus('loading')
+    fetch('/api/fuel-price')
+      .then((res) => res.json().then((data: FuelPriceApiResponse) => ({ res, data })))
+      .then(({ res, data }) => {
+        if (!res.ok || data.superPrice === null) {
+          setFuelPriceStatus('error')
+          setFuelPriceInfo(data)
+          return
+        }
+        setFuelPriceInfo(data)
+        setFuelPriceStatus('success')
+        setCarParams((p) => ({ ...p, fuelPricePerLiter: data.superPrice as number }))
+      })
+      .catch(() => setFuelPriceStatus('error'))
+  }
+
+  const onCarSelected = (carId: string) => {
+    setSelectedCarId(carId)
+    if (carId === 'custom') return
+    const car = findCar(carId)
+    if (car) {
+      setCarParams((p) => ({ ...p, consumptionL100km: car.consumptionL100km }))
+    }
+  }
 
   const onOriginPlaceChanged = useCallback(() => {
     const place = originAutocompleteRef.current?.getPlace()
@@ -279,6 +346,50 @@ export default function TransportComparator() {
             subtitle="Combustible + estacionamiento + peajes"
             cost={costs.car}
             isCheapest={cheapest === 'car'}
+            info={
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-600">
+                  <span className="block mb-1">Tu auto</span>
+                  <select
+                    className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-900"
+                    value={selectedCarId}
+                    onChange={(e) => onCarSelected(e.target.value)}
+                  >
+                    <option value="custom">Otro / no está en la lista</option>
+                    {CAR_BRANDS.map((brand) => (
+                      <optgroup key={brand} label={brand}>
+                        {carsByBrand(brand).map((car) => (
+                          <option key={car.id} value={car.id}>
+                            {car.model} ({car.consumptionL100km} L/100km)
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[11px] text-gray-400 leading-snug">
+                  {fuelPriceStatus === 'loading' &&
+                    'Buscando precio de la nafta en surtidores.com.ar…'}
+                  {fuelPriceStatus === 'success' &&
+                    `Precio de nafta según surtidores.com.ar (puede variar por estación). Actualizado ${new Date(
+                      fuelPriceInfo?.fetchedAt || ''
+                    ).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}.`}
+                  {fuelPriceStatus === 'error' && (
+                    <>
+                      No se pudo obtener el precio de surtidores.com.ar automáticamente. Ingresalo
+                      manualmente abajo.{' '}
+                      <button
+                        type="button"
+                        onClick={refreshFuelPrice}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Reintentar
+                      </button>
+                    </>
+                  )}
+                </p>
+              </div>
+            }
           >
             <NumberField
               label="Precio nafta ($/litro)"

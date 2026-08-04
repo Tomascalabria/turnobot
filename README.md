@@ -8,8 +8,12 @@ conviene ir en **auto propio**, en **colectivo/bondi**, en **Uber** o en **Cabif
 - El origen y destino se buscan con el autocompletado de **Google Places** y la ruta
   (distancia y tiempo) se calcula con la **Directions API** de Google Maps (modo auto y,
   cuando hay datos disponibles, modo transporte público).
-- **Auto propio**: se estima con precio de nafta, consumo del auto, estacionamiento y
-  peajes (todos editables).
+- **Auto propio**: se elige el auto de una lista de modelos comunes en Argentina, que
+  autocompleta el consumo (L/100km) — igual queda editable por si el uso real difiere.
+  El precio de la nafta se trae automáticamente de
+  [surtidores.com.ar](https://surtidores.com.ar/precios/) (endpoint propio en
+  `app/api/fuel-price`); si no se puede obtener, se puede cargar a mano. Se suman
+  estacionamiento y peajes (editables).
 - **Colectivo/bondi**: tarifa SUBE por tramo, editable, con la cantidad de colectivos
   necesarios.
 - **Uber / Cabify**: como ninguna de las dos apps ofrece una API pública de precios,

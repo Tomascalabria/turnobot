@@ -11,6 +11,7 @@ interface CostCardProps {
   isCheapest: boolean
   children?: ReactNode
   disclaimer?: string
+  info?: ReactNode
 }
 
 export default function CostCard({
@@ -21,6 +22,7 @@ export default function CostCard({
   isCheapest,
   children,
   disclaimer,
+  info,
 }: CostCardProps) {
   return (
     <div
@@ -41,6 +43,8 @@ export default function CostCard({
         </div>
       </div>
       <p className="text-2xl font-bold text-gray-900">{formatARS(cost)}</p>
+
+      {info}
 
       {children && (
         <details className="text-sm text-gray-600">
